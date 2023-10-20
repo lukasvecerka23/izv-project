@@ -14,16 +14,18 @@ import pytest
 
 
 def test_integrate():
-    """Test vypoctu integralu """
-    def f(x): return 10 * x + 2
+    """Test vypoctu integralu"""
+
+    def f(x):
+        return 10 * x + 2
+
     r = part01.integrate(f, 0, 1, 100)
     assert r == pytest.approx(7)
 
 
 def test_generate_fn():
     """Test generovani grafu s vice funkcemi"""
-    part01.generate_graph([1., 2., -2.], show_figure=False,
-                          save_path="tmp_fn.png")
+    part01.generate_graph([1.0, 1.5, 2.0], show_figure=False, save_path="tmp_fn.png")
     assert os.path.exists("tmp_fn.png")
 
 
