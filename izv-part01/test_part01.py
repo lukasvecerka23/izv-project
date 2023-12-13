@@ -8,7 +8,6 @@ nebo
    python3 -m pytest
 """
 import part01
-import numpy as np
 import os
 import pytest
 

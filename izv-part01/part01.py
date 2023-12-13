@@ -41,7 +41,8 @@ def generate_graph(
     a: List[float], show_figure: bool = False, save_path: str | None = None
 ):
     """
-    Function for plotting mathematical function f(x) = a^2 * x^3 * sin(x)
+    Function for plotting mathematical function:
+    f(x) = a^2 * x^3 * sin(x)
     Args:
         a (List[float]): list of a values
         show_figure (bool): if True, shows figure
@@ -113,8 +114,10 @@ def plot_graph(
 
 def generate_sinus(show_figure: bool = False, save_path: str | None = None):
     """
-    Generates 3 sinus plots of 3 functions, f1 = 0.5 * cos(1/50*pi*t),
-    f2 = 0.25 * (sin(pi*t) + sin(3/2*pi*t) and f3 = f1 + f2
+    Generates 3 sinus plots of 3 functions:
+    f1 = 0.5 * cos(1/50*pi*t),
+    f2 = 0.25 * (sin(pi*t) + sin(3/2*pi*t)
+    f3 = f1 + f2
     Args:
         show_figure (bool): if True, shows figure
         save_path (str): if set, saves figure to path
