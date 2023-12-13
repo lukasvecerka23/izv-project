@@ -95,7 +95,56 @@ def parse_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
 
 def plot_state(df: pd.DataFrame, fig_location: str = None,
                show_figure: bool = False):
-    pass
+    
+
+    df_copy = df.copy()
+    state_map = {
+        7: 'invalida',
+        6: 'nemoc, úraz apod.',
+        5: 'pod vlivem alkoholu 1‰ a více',
+        4: 'alkoholu, obsah alkoholu v krvi do 0,99 ‰',
+        9: 'sebevražda',
+        8: 'řidič při jízdě zemřel (infarkt apod.)'
+    }
+
+    df['state'] = df_copy['p57'].map(state_map)
+
+    grouped_data = df_copy.groupby(['region', 'state']).size().reset_index(name='count')
+
+    sns.set_style("whitegrid")
+
+    fig, axes = plt.subplots(3, 2, figsize=(10, 15), constrained_layout=True)
+    fig.suptitle('Number of Accidents by State and Region')
+
+    axes_flat = axes.flatten()
+
+    for idx, (state, description) in enumerate(state_map.items()):
+        ax = axes_flat[idx]
+        sns.barplot(x='region', y='count', 
+                    data=grouped_data[grouped_data['state'] == description], 
+                    ax=ax, palette='ch:start=.2,rot=-.3', hue='count', dodge=False)
+        ax.set_title(f"Stav řidiče: {description}")
+
+        ax.set_xlabel('')
+        ax.set_ylabel('')
+
+        ax.get_legend().remove()
+
+        if idx < 4:
+            ax.set_xticklabels([])
+
+        if idx > 3:
+            ax.set_xlabel('Kraj')
+
+        if idx % 2 == 0:
+            ax.set_ylabel('Počet nehod')
+        
+
+    if fig_location:
+        fig.savefig(fig_location)
+
+    if show_figure:
+        plt.show()
 
 # Ukol4: alkohol v jednotlivých hodinách
 
