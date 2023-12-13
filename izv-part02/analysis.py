@@ -178,8 +178,7 @@ def plot_state(
     df_copy["state"] = df_copy["p57"].map(state_map)
 
     grouped_data = df_copy.groupby(
-        ["region", "state"]).size().reset_index(name="count"
-                                                )
+        ["region", "state"]).size().reset_index(name="count")
 
     sns.set_style("whitegrid")
 
@@ -322,7 +321,6 @@ def plot_fault(
     end_date = pd.Timestamp("2023-01-01")
     regions_to_plot = ["JHM", "MSK", "OLK", "ZLK"]
 
-    # Plotting
     fig, axes = plt.subplots(
         2, 2, figsize=(12, 10), sharey=True, sharex=True,
         constrained_layout=True
@@ -362,20 +360,9 @@ def plot_fault(
 
 
 if __name__ == "__main__":
-    # zde je ukazka pouziti, tuto cast muzete modifikovat podle libosti
-    # skript nebude pri testovani pousten primo, ale budou volany konkreni
-    # funkce.
     df = load_data("data.zip")
     df2 = parse_data(df, True)
 
     plot_state(df2, "01_state.png")
     plot_alcohol(df2, "02_alcohol.png", True)
     plot_fault(df2, "03_fault.png", True)
-
-
-# Poznamka:
-# pro to, abyste se vyhnuli castemu nacitani muzete vyuzit napr
-# VS Code a oznaceni jako bunky (radek #%%% )
-# Pak muzete data jednou nacist a dale ladit jednotlive funkce
-# Pripadne si muzete vysledny dataframe ulozit nekam na disk (pro ladici
-# ucely) a nacitat jej naparsovany z disku
