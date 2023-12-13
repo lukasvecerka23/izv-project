@@ -7,6 +7,7 @@ import seaborn as sns
 import numpy as np
 import zipfile
 import io
+import matplotlib.dates as mdates
 
 # muzete pridat libovolnou zakladni knihovnu ci knihovnu predstavenou na prednaskach
 # dalsi knihovny pak na dotaz
@@ -95,8 +96,6 @@ def parse_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
 
 def plot_state(df: pd.DataFrame, fig_location: str = None,
                show_figure: bool = False):
-    
-
     df_copy = df.copy()
     state_map = {
         7: 'invalida',
@@ -107,14 +106,13 @@ def plot_state(df: pd.DataFrame, fig_location: str = None,
         8: 'řidič při jízdě zemřel (infarkt apod.)'
     }
 
-    df['state'] = df_copy['p57'].map(state_map)
+    df_copy['state'] = df_copy['p57'].map(state_map)
 
     grouped_data = df_copy.groupby(['region', 'state']).size().reset_index(name='count')
 
     sns.set_style("whitegrid")
 
     fig, axes = plt.subplots(3, 2, figsize=(10, 15), constrained_layout=True)
-    fig.suptitle('Number of Accidents by State and Region')
 
     axes_flat = axes.flatten()
 
@@ -138,39 +136,129 @@ def plot_state(df: pd.DataFrame, fig_location: str = None,
 
         if idx % 2 == 0:
             ax.set_ylabel('Počet nehod')
-        
+
 
     if fig_location:
-        fig.savefig(fig_location)
+        fig.savefig(fig_location, bbox_inches='tight')
 
     if show_figure:
-        plt.show()
+        plt.show()       
+    else:
+        plt.close(fig)
 
 # Ukol4: alkohol v jednotlivých hodinách
 
 
 def plot_alcohol(df: pd.DataFrame, fig_location: str = None,
                  show_figure: bool = False):
-    pass
+    df_copy = df.copy()
+    df_copy["p2b"] = (df_copy["p2b"] // 100)
+    df_copy = df_copy[df_copy["p2b"].between(0, 23)]
+
+    df_copy["Pod vlivem"] = pd.cut(df_copy["p11"], bins=[0, 2, 9], labels=["Ne", "Ano"])
+
+    grouped_data = df_copy.groupby(["region", "p2b", "Pod vlivem"], observed=True).size().reset_index(name="count")
+
+    sns.set_style("whitegrid")
+
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10), constrained_layout=True)
+
+    axes_flat = axes.flatten()
+
+    regions = ["JHM", "MSK", "OLK", "ZLK"]
+
+    regions_data = grouped_data[grouped_data['region'].isin(regions)]
+
+    for idx, region in enumerate(regions):
+        ax = axes_flat[idx]
+        region_data = regions_data[regions_data['region'] == region].reset_index()
+        sns.barplot(x='p2b', y='count', hue='Pod vlivem', 
+                    data=region_data, 
+                    ax=ax, hue_order=["Ano", "Ne"])
+        ax.set_title(f'Kraj: {region}')
+        ax.set_xlabel('Hodina')
+        ax.set_ylabel('Počet nehod')
+
+        ax.get_legend().remove()
+
+
+    handles, labels = ax.get_legend_handles_labels()
+    fig.legend(handles, labels, loc='center', bbox_to_anchor=(1.05, 0.5), title='Alkohol', frameon=False)
+
+    if fig_location:
+        fig.savefig(fig_location, bbox_inches='tight')
+
+    if show_figure:
+        plt.show()
+    else:
+        plt.close(fig)
 
 # Ukol 5: Zavinění nehody v čase
 
 
 def plot_fault(df: pd.DataFrame, fig_location: str = None,
                show_figure: bool = False):
-    pass
+    df_copy = df.copy()
+
+    fault_map = {
+        1: 'Řidičem motorového vozidla',
+        2: 'Řičičem nemotorového vozidla',
+        3: 'Chodcem',
+        4: 'Zvířetem'
+    }
+
+    df_copy['fault'] = df_copy['p10'].map(fault_map)
+
+    pivot_df = df_copy.pivot_table(index=['date', 'region'], columns='fault', aggfunc='size', fill_value=0)
+
+    monthly_data = pivot_df.groupby('region').resample('M', level=0).sum()
+
+    stacked_monthly_data = monthly_data.stack().reset_index(name='count')
+    stacked_monthly_data.columns = ['region', 'date', 'fault', 'count']
+
+
+    start_date = pd.Timestamp('2016-01-01')
+    end_date = pd.Timestamp('2023-01-01')
+    regions_to_plot = ["JHM", "MSK", "OLK", "ZLK"]
+
+    # Plotting
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10), sharey=True, sharex=True, constrained_layout=True)
+    axes_flat = axes.flatten()
+    for i, region in enumerate(regions_to_plot):
+        ax = axes_flat[i]
+        region_data = stacked_monthly_data[stacked_monthly_data['region'] == region]
+        sns.lineplot(x='date', y='count', hue='fault', data=region_data, ax=ax)
+        ax.set_title(f'Kraj: {region}')
+        ax.set_ylabel('Počet nehod')
+        ax.set_xlabel('Období')
+        ax.get_legend().remove()
+
+        ax.set_xlim([start_date, end_date])
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('01/%y'))
+
+    handles, labels = ax.get_legend_handles_labels()
+    fig.legend(handles, labels, loc='center', bbox_to_anchor=(1.10, 0.5), title='Zavinění', frameon=False)
+
+    if fig_location:
+        fig.savefig(fig_location, bbox_inches='tight')
+
+    if show_figure:
+        plt.show()
+    else:
+        plt.close(fig)
+
 
 
 if __name__ == "__main__":
     # zde je ukazka pouziti, tuto cast muzete modifikovat podle libosti
     # skript nebude pri testovani pousten primo, ale budou volany konkreni
     # funkce.
-    df = load_data("data/data.zip")
+    df = load_data("data.zip")
     df2 = parse_data(df, True)
 
     plot_state(df2, "01_state.png")
     plot_alcohol(df2, "02_alcohol.png", True)
-    plot_fault(df2, "03_fault.png")
+    plot_fault(df2, "03_fault.png", True)
 
 
 # Poznamka:
