@@ -6,6 +6,7 @@ import pandas as pd
 import seaborn as sns
 import numpy as np
 import zipfile
+import io
 
 # muzete pridat libovolnou zakladni knihovnu ci knihovnu predstavenou na prednaskach
 # dalsi knihovny pak na dotaz
@@ -38,11 +39,56 @@ def load_data(filename: str) -> pd.DataFrame:
         "KVK": "19",
     }
 
+    final_df = pd.DataFrame()
+
+    with zipfile.ZipFile(filename, 'r') as data:
+        for zipfiles in data.namelist():
+            with data.open(zipfiles, 'r') as year:
+                with zipfile.ZipFile(io.BytesIO(year.read())) as zip:
+                    for region_name, region_code in regions.items():
+                        with zip.open(f"{region_code}.csv", 'r') as csv_file:
+                            df = pd.read_csv(csv_file,sep=';', names=headers, encoding='cp1250', low_memory=False)
+                            df["region"] = region_name
+                            final_df = pd.concat([final_df, df], ignore_index=True)
+    
+    return final_df
+
+
 # Ukol 2: zpracovani dat
 
 
 def parse_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
-    pass
+    new_df = df.copy()
+    new_df.drop_duplicates(subset='p1', inplace=True)
+    new_df["date"] = pd.to_datetime(new_df["p2a"], format="%Y-%m-%d")
+    new_df.drop(columns=["p2a"], inplace=True)
+    cols_to_skip = ["date", "region"]
+    category_cols = ["p47", "h", "i", "k", "l", "p", "q", "t"]
+    float_cols = ["a", "b", "d", "e", "f", "g", "n", "o"]
+
+    for col in category_cols:
+        new_df[col] = new_df[col].astype("category")
+
+    for col in float_cols:
+        new_df[col] = new_df[col].str.replace(",", ".")
+
+    for col in new_df.columns:
+        if col not in cols_to_skip and col not in category_cols:
+                new_df[col] = pd.to_numeric(new_df[col], errors="coerce")
+
+
+    if verbose:
+        orig_memory_usage = df.memory_usage(deep=True).sum()
+        new_memory_usage = new_df.memory_usage(deep=True).sum()
+
+        orig_memory_usage_mb = orig_memory_usage / 1e6
+        new_memory_usage_mb = new_memory_usage / 1e6
+
+        print(f"Original size: {orig_memory_usage_mb:.2f} MB")
+        print(f"New size: {new_memory_usage_mb:.2f} MB")
+
+    
+    return new_df
 
 # Ukol 3: počty nehod oidke stavu řidiče
 
