@@ -15,7 +15,6 @@ import matplotlib.dates as mdates
 
 
 def load_data(filename: str) -> pd.DataFrame:
-    # tyto konstanty nemente, pomuzou vam pri nacitani
     headers = [
         "p1",
         "p36",
@@ -83,7 +82,6 @@ def load_data(filename: str) -> pd.DataFrame:
         "p5a",
     ]
 
-    # def get_dataframe(filename: str, verbose: bool = False) -> pd.DataFrame:
     regions = {
         "PHA": "00",
         "STC": "01",
@@ -103,10 +101,13 @@ def load_data(filename: str) -> pd.DataFrame:
 
     final_df = pd.DataFrame()
 
+    # outer zip file
     with zipfile.ZipFile(filename, "r") as data:
         for zipfiles in data.namelist():
+            # inner zip file
             with data.open(zipfiles, "r") as year:
                 with zipfile.ZipFile(io.BytesIO(year.read())) as zip:
+                    # inner csv file
                     for region_name, region_code in regions.items():
                         with zip.open(f"{region_code}.csv", "r") as csv_file:
                             df = pd.read_csv(
@@ -132,16 +133,20 @@ def parse_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
     new_df.drop_duplicates(subset="p1", inplace=True)
     new_df["date"] = pd.to_datetime(new_df["p2a"], format="%Y-%m-%d")
     new_df.drop(columns=["p2a"], inplace=True)
+
     cols_to_skip = ["date", "region"]
     category_cols = ["p47", "h", "i", "k", "l", "p", "q", "t"]
     float_cols = ["a", "b", "d", "e", "f", "g", "n", "o"]
 
+    # retype string value columns to category
     for col in category_cols:
         new_df[col] = new_df[col].astype("category")
 
+    # replace commas with dots in float columns
     for col in float_cols:
         new_df[col] = new_df[col].str.replace(",", ".")
 
+    # retype rest of the columns to numeric values
     for col in new_df.columns:
         if col not in cols_to_skip and col not in category_cols:
             new_df[col] = pd.to_numeric(new_df[col], errors="coerce")
@@ -182,7 +187,7 @@ def plot_state(
 
     sns.set_style("whitegrid")
 
-    fig, axes = plt.subplots(3, 2, figsize=(10, 15), constrained_layout=True)
+    fig, axes = plt.subplots(3, 2, figsize=(10, 15), constrained_layout=True, sharex=True)
 
     axes_flat = axes.flatten()
 
@@ -199,17 +204,12 @@ def plot_state(
         )
         ax.set_title(f"Stav řidiče: {description}")
 
-        ax.set_xlabel("")
+        ax.set_xlabel("Kraj")
         ax.set_ylabel("")
 
         ax.get_legend().remove()
 
-        if idx < 4:
-            ax.set_xticklabels([])
-
-        if idx > 3:
-            ax.set_xlabel("Kraj")
-
+        # keep y label only for left plots
         if idx % 2 == 0:
             ax.set_ylabel("Počet nehod")
 
@@ -223,15 +223,16 @@ def plot_state(
 
 
 # Ukol4: alkohol v jednotlivých hodinách
-
-
 def plot_alcohol(
         df: pd.DataFrame, fig_location: str = None, show_figure: bool = False
 ):
     df_copy = df.copy()
+
+    # convert to hourse and get only hourse between 0 - 23
     df_copy["p2b"] = df_copy["p2b"] // 100
     df_copy = df_copy[df_copy["p2b"].between(0, 23)]
 
+    # create category for alcohol
     df_copy["Pod vlivem"] = pd.cut(
         df_copy["p11"], bins=[0, 2, 9], labels=["Ne", "Ano"]
         )
@@ -250,13 +251,11 @@ def plot_alcohol(
 
     regions = ["JHM", "MSK", "OLK", "ZLK"]
 
-    regions_data = grouped_data[grouped_data["region"].isin(regions)]
-
     for idx, region in enumerate(regions):
         ax = axes_flat[idx]
 
-        region_data = regions_data[
-            regions_data["region"] == region
+        region_data = grouped_data[
+            grouped_data["region"] == region
         ].reset_index()
 
         sns.barplot(
@@ -337,6 +336,7 @@ def plot_fault(
         ax.set_xlabel("Období")
         ax.get_legend().remove()
 
+        # limit the x axis and format the date
         ax.set_xlim([start_date, end_date])
         ax.xaxis.set_major_formatter(mdates.DateFormatter("01/%y"))
 
