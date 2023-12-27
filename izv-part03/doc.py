@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import statsmodels.api as sm
+from sklearn.linear_model import LogisticRegression
 
 
 def convert_two_digit_year_to_four_digit(year_str, cutoff="23"):
@@ -212,18 +212,18 @@ plt.close(fig3)
 
 cars_df_copy = cars_df.copy()
 
-cars_df_copy["technical_issue"] = cars_df_copy["technical_issue"].astype(int)
-cars_df_copy["intercept"] = 1
-
 cars_df_copy = cars_df_copy.dropna(subset=["car_age"])
 
-X = cars_df_copy[["car_age", "intercept"]]
-Y = cars_df_copy["technical_issue"]
+X = cars_df_copy['car_age'].values.reshape(-1, 1)
+Y = cars_df_copy["technical_issue"].astype(int)
 
-logit_model = sm.Logit(Y, X)
-result = logit_model.fit()
+logit_model = LogisticRegression()
 
-if result.params["car_age"] > 0:
+logit_model.fit(X, Y)
+
+result = logit_model.coef_[0][0]
+print(f"Koeficient: {result}")
+if result > 0:
     print(
         "Koeficient je vetsi nez 0, takze existuje zavislost\
  mezi stari vozidla a technickymi zavadami."
@@ -234,16 +234,16 @@ else:
  stari vozidla a technickymi zavadami."
     )
 
-if result.pvalues["car_age"] < 0.05:
-    print(
-        "P-hodnota je mensi nez 0.05, takze existuje statisticky\
- vyznamna zavislost mezi stari vozidla a technickymi zavadami."
-    )
-else:
-    print(
-        "P-hodnota je vetsi nez 0.05, takze neexistuje statisticky\
- vyznamna zavislost mezi stari vozidla a technickymi zavadami."
-    )
+# if result.pvalues["car_age"] < 0.05:
+#     print(
+#         "P-hodnota je mensi nez 0.05, takze existuje statisticky\
+#  vyznamna zavislost mezi stari vozidla a technickymi zavadami."
+#     )
+# else:
+#     print(
+#         "P-hodnota je vetsi nez 0.05, takze neexistuje statisticky\
+#  vyznamna zavislost mezi stari vozidla a technickymi zavadami."
+#     )
 
 # Print the table
 
