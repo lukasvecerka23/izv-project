@@ -234,17 +234,6 @@ else:
  stari vozidla a technickymi zavadami."
     )
 
-# if result.pvalues["car_age"] < 0.05:
-#     print(
-#         "P-hodnota je mensi nez 0.05, takze existuje statisticky\
-#  vyznamna zavislost mezi stari vozidla a technickymi zavadami."
-#     )
-# else:
-#     print(
-#         "P-hodnota je vetsi nez 0.05, takze neexistuje statisticky\
-#  vyznamna zavislost mezi stari vozidla a technickymi zavadami."
-#     )
-
 # Print the table
 
 car_idx = cars_df["p45a"].value_counts().head(10)
